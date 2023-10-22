@@ -1,0 +1,201 @@
+Importing the libraries
+
+import tensorflow as tf
+
+from keras.preprocessing.image import ImageDataGenerator
+
+from keras.layers import BatchNormalization
+
+from sklearn.metrics import classification_report, confusion_matrix
+
+import os
+
+
+import cv2
+
+from keras.preprocessing import image import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+
+Part 1 - Data Preprocessing
+
+Preprocessing the Training set
+
+train_datagen = ImageDataGenerator(rescale = 1./255,
+
+shear_range = 0.2,
+
+zoom_range = 0.2,
+
+horizontal_flip = True)
+
+
+
+
+training_set = train_datagen.flow_from_directory('/content/drive/MyDrive/FYDP/Bottle/tra in',
+
+target_size = (64, 64),
+
+batch_size = 32,
+
+class_mode = 'binary')
+
+
+
+
+
+
+Preprocessing the Test set
+
+test_data_dir = '/content/drive/MyDrive/FYDP/Bottle/test'
+
+dirs = sorted(os.listdir(test_data_dir))
+
+
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+
+test_set = test_datagen.flow_from_directory(test_data_dir,
+
+target_size=(64, 64),
+
+class_mode='binary')
+
+target_names = list(test_set.class_indices.keys())
+target_names
+
+
+
+Part 2 - Building the CNN
+
+Initializing the CNN
+
+cnn = tf.keras.models.Sequential()
+
+Step 1 - Convolution
+
+cnn.add(tf.keras.layers.Conv2D(filters=32,
+
+kernel_size=3,
+
+activation='relu',
+
+input_shape=[64, 64, 3],
+
+
+bias_regularizer=tf.keras.regularizers.l2(l2=0.0001 )))
+
+cnn.add(BatchNormalization())
+
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+
+
+
+
+cnn.add(tf.keras.layers.Conv2D(filters=64, kernel_size=3,
+
+bias_regularizer=tf.keras.regularizers.l2(l2=0.0001 )
+
+))
+
+cnn.add(BatchNormalization())
+
+
+
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+
+
+
+cnn.add(tf.keras.layers.Conv2D(filters=64, kernel_size=3,
+
+
+
+
+bias_regularizer=tf.keras.regularizers.l2(l2=0.0001 )))
+
+cnn.add(BatchNormalization())
+
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+
+
+
+
+cnn.add(tf.keras.layers.Conv2D(filters=128, kernel_size=3,
+
+bias_regularizer=tf.keras.regularizers.l2(l2=0.0001 )))
+
+cnn.add(BatchNormalization())
+
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+
+
+
+
+cnn.add(tf.keras.layers.Conv2D(filters=256, kernel_size=3,
+
+bias_regularizer=tf.keras.regularizers.l2(l2=0.0001), padding = 'same'))
+cnn.add(BatchNormalization())
+
+cnn.add(tf.keras.layers.MaxPool2D(pool_size=2, strides=2))
+
+Step 3 - Flattening
+
+cnn.add(tf.keras.layers.Flatten())
+
+
+Step 4 - Full Connection
+
+cnn.add(tf.keras.layers.Dense(units=256, activation='relu'))
+
+
+
+Step 5 - Output Layer
+
+cnn.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+
+
+Part 3 - Training the CNN
+
+callbacks = [
+
+tf.keras.callbacks.ReduceLROnPlateau(factor=0.1,
+
+patience=5,
+
+min_lr=0.00001,
+
+verbose=1)]
+
+Metrics=['accuracy',
+
+[tf.keras.metrics.AUC(name='auc')],
+
+[tf.keras.metrics.Recall(name='recall')],
+
+[tf.keras.metrics.Precision(name='precision')]]
+
+
+Compiling the CNN
+
+cnn.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = Metrics)
+
+Training the CNN on the Training set and evaluating it on the Test set
+
+r = cnn.fit(x = training_set, validation_data = test_set, epochs = 100, callbacks=callbacks)
+
+plt.plot(r.history['accuracy'], label='train acc')
+
+plt.plot(r.history['val_accuracy'], label='val acc')
+
+plt.legend()
+
+plt.show()
+
+cnn.evaluate(test_set)
